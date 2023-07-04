@@ -13,6 +13,9 @@ Manuscript: https://arxiv.org/abs/2305.07243
 
 ### Version history
 
+#### v2.5; 2023/3/23
+- Changed CUDA to CPU, added support M1/M2 silicon chips.
+
 #### v2.4; 2022/5/17
 - Removed CVVP model. Found that it does not, in fact, make an appreciable difference in the output.
 - Add better debugging support; existing tools now spit out debug files which can be used to reproduce bad runs.
