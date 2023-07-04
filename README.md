@@ -1,5 +1,7 @@
 # TorToiSe
 
+### Modified July 3, 2023 by Eric Pan for CPU Support
+
 Tortoise is a text-to-speech program built with the following priorities:
 
 1. Strong multi-voice capabilities.
