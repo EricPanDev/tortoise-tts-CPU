@@ -1,4 +1,3 @@
-import os
 import functools
 import math
 
@@ -43,7 +42,7 @@ def normalization(channels):
 
 class QKVAttentionLegacy(nn.Module):
     """
-    A module which performs QKV attention. Matches legacy QKVAttention + input/output heads shaping
+    A module which performs QKV attention. Matches legacy QKVAttention + input/ouput heads shaping
     """
 
     def __init__(self, n_heads):
@@ -289,12 +288,9 @@ class AudioMiniEncoder(nn.Module):
         return h[:, :, 0]
 
 
-DEFAULT_MEL_NORM_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/mel_norms.pth')
-
-
 class TorchMelSpectrogram(nn.Module):
     def __init__(self, filter_length=1024, hop_length=256, win_length=1024, n_mel_channels=80, mel_fmin=0, mel_fmax=8000,
-                 sampling_rate=22050, normalize=False, mel_norm_file=DEFAULT_MEL_NORM_FILE):
+                 sampling_rate=22050, normalize=False, mel_norm_file='tortoise/data/mel_norms.pth'):
         super().__init__()
         # These are the default tacotron values for the MEL spectrogram.
         self.filter_length = filter_length
@@ -342,7 +338,7 @@ class CheckpointedLayer(nn.Module):
         for k, v in kwargs.items():
             assert not (isinstance(v, torch.Tensor) and v.requires_grad)  # This would screw up checkpointing.
         partial = functools.partial(self.wrap, **kwargs)
-        return partial(x, *args)
+        return torch.utils.checkpoint.checkpoint(partial, x, *args)
 
 
 class CheckpointedXTransformerEncoder(nn.Module):

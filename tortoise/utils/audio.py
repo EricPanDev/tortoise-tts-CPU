@@ -10,9 +10,6 @@ from scipy.io.wavfile import read
 from tortoise.utils.stft import STFT
 
 
-BUILTIN_VOICES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../voices')
-
-
 def load_wav_to_torch(full_path):
     sampling_rate, data = read(full_path)
     if data.dtype == np.int32:
@@ -85,23 +82,21 @@ def dynamic_range_decompression(x, C=1):
     return torch.exp(x) / C
 
 
-def get_voices(extra_voice_dirs=[]):
-    dirs = [BUILTIN_VOICES_DIR] + extra_voice_dirs
+def get_voices():
+    subs = os.listdir('tortoise/voices')
     voices = {}
-    for d in dirs:
-        subs = os.listdir(d)
-        for sub in subs:
-            subj = os.path.join(d, sub)
-            if os.path.isdir(subj):
-                voices[sub] = list(glob(f'{subj}/*.wav')) + list(glob(f'{subj}/*.mp3')) + list(glob(f'{subj}/*.pth'))
+    for sub in subs:
+        subj = os.path.join('tortoise/voices', sub)
+        if os.path.isdir(subj):
+            voices[sub] = list(glob(f'{subj}/*.wav')) + list(glob(f'{subj}/*.mp3')) + list(glob(f'{subj}/*.pth'))
     return voices
 
 
-def load_voice(voice, extra_voice_dirs=[]):
+def load_voice(voice):
     if voice == 'random':
         return None, None
 
-    voices = get_voices(extra_voice_dirs)
+    voices = get_voices()
     paths = voices[voice]
     if len(paths) == 1 and paths[0].endswith('.pth'):
         return None, torch.load(paths[0])
@@ -113,28 +108,25 @@ def load_voice(voice, extra_voice_dirs=[]):
         return conds, None
 
 
-def load_voices(voices, extra_voice_dirs=[]):
+def load_voices(voices):
     latents = []
     clips = []
     for voice in voices:
         if voice == 'random':
-            if len(voices) > 1:
-                print("Cannot combine a random voice with a non-random voice. Just using a random voice.")
+            print("Cannot combine a random voice with a non-random voice. Just using a random voice.")
             return None, None
-        clip, latent = load_voice(voice, extra_voice_dirs)
+        clip, latent = load_voice(voice)
         if latent is None:
             assert len(latents) == 0, "Can only combine raw audio voices or latent voices, not both. Do it yourself if you want this."
             clips.extend(clip)
-        elif clip is None:
-            assert len(clips) == 0, "Can only combine raw audio voices or latent voices, not both. Do it yourself if you want this."
+        elif voice is None:
+            assert len(voices) == 0, "Can only combine raw audio voices or latent voices, not both. Do it yourself if you want this."
             latents.append(latent)
     if len(latents) == 0:
         return clips, None
     else:
-        latents_0 = torch.stack([l[0] for l in latents], dim=0).mean(dim=0)
-        latents_1 = torch.stack([l[1] for l in latents], dim=0).mean(dim=0)
-        latents = (latents_0,latents_1)
-        return None, latents
+        latents = torch.stack(latents, dim=0)
+        return None, latents.mean(dim=0)
 
 
 class TacotronSTFT(torch.nn.Module):
@@ -180,9 +172,9 @@ class TacotronSTFT(torch.nn.Module):
         return mel_output
 
 
-def wav_to_univnet_mel(wav, do_normalization=False, device='cuda'):
+def wav_to_univnet_mel(wav, do_normalization=False):
     stft = TacotronSTFT(1024, 256, 1024, 100, 24000, 0, 12000)
-    stft = stft.to(device)
+    stft = stft.cpu()
     mel = stft.mel_spectrogram(wav)
     if do_normalization:
         mel = normalize_tacotron_mel(mel)

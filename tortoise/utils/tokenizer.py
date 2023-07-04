@@ -1,4 +1,3 @@
-import os
 import re
 
 import inflect
@@ -149,7 +148,6 @@ def english_cleaners(text):
   text = text.replace('"', '')
   return text
 
-
 def lev_distance(s1, s2):
   if len(s1) > len(s2):
     s1, s2 = s2, s1
@@ -165,12 +163,8 @@ def lev_distance(s1, s2):
     distances = distances_
   return distances[-1]
 
-
-DEFAULT_VOCAB_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/tokenizer.json')
-
-
 class VoiceBpeTokenizer:
-    def __init__(self, vocab_file=DEFAULT_VOCAB_FILE):
+    def __init__(self, vocab_file='tortoise/data/tokenizer.json'):
         if vocab_file is not None:
             self.tokenizer = Tokenizer.from_file(vocab_file)
 
